@@ -1,0 +1,10 @@
+[client]
+showSidebarNavigation = false
+
+[theme]
+base="dark"
+primaryColor="#00ffc4"
+font="monospace"
+
+[browser]
+gatherUsageStats = false
