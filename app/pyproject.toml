@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "sdsdg"
+name = "sdsdg-app"
 version = "0.1.0"
 description = ""
 authors = ["Bruno-Gomes-QA <bruno.gomes.qa@gmail.com>"]
