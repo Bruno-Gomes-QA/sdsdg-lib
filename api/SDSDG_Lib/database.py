@@ -60,14 +60,11 @@ class DatabaseConnectionManager:
         """
         self.connections = {}
         self.models_dir = 'models'
-        os.makedirs(
-            self.models_dir, exist_ok=True
-        )  # Garante que a pasta models exista
         for config in configs:
             try:
                 self.add_connection(config)
             except Exception as e:
-                print(
+                raise ValueError(
                     f"Erro ao adicionar conexão {config.get('name', '<sem_nome>')}: {e}"
                 )
 
@@ -79,55 +76,35 @@ class DatabaseConnectionManager:
             config (dict): Configurações para a conexão com o banco de dados.
 
         Raises:
-            ValueError: Se o dicionário de configuração estiver incompleto.
+            ValueError: Se o dicionário de configuração estiver incompleto ou contiver valores inválidos.
         """
-        required_keys = [
-            'name',
-            'dialect',
-            'username',
-            'password',
-            'host',
-            'port',
-            'database',
-        ]
-        missing_keys = [key for key in required_keys if key not in config]
-        if missing_keys:
-            raise ValueError(
-                f"Configuração incompleta, chaves ausentes: {', '.join(missing_keys)}"
-            )
 
         try:
-            connection_string = self.build_connection_url(config)
-            engine = create_engine(connection_string)
-            Session = sessionmaker(bind=engine)
-            self.connections[config['name']] = {
-                'engine': engine,
-                'session': Session,
-            }
+            config_v, missing_keys = self.validate_requirements_keys(config)
+            if config_v:
+                connection_string = self.build_connection_url(config)
+                engine = create_engine(connection_string)
+                Session = sessionmaker(bind=engine)
+                self.connections[config['name']] = {
+                    'engine': engine,
+                    'session': Session,
+                }
 
-            # Gera os modelos para a conexão adicionada
-            output_path = os.path.join(
-                self.models_dir, f"{config['name']}_models.py"
-            )
-            self.generate_models(connection_string, output_path)
+                # Gera os modelos para a conexão adicionada
+                output_path = os.path.join(
+                    self.models_dir, f"{config['name']}_models.py"
+                )
+                self.generate_models(connection_string, output_path)
+            else:
+                raise ValueError(
+                    f"Configuração inválida, valores ausentes ou vazios: {', '.join(missing_keys)}"
+                )
         except subprocess.SubprocessError as e:
             if 'Access denied' in str(e):
                 raise PermissionError(
                     f'Acesso negado. '
                     'Verifique suas credenciais de autenticação.'
-                ) from None
-            raise ConnectionError(
-                f'Não foi possível conectar ao banco de dados. '
-                'Verifique as configurações de conexão e se o banco está acessível.'
-            ) from None
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(
-                f"Erro ao gerar models para a conexão '{config['name']}': {e.stderr.decode().strip()}"
-            ) from None
-        except Exception as e:
-            raise RuntimeError(
-                f"Erro desconhecido ao criar conexão '{config['name']}': {e}"
-            ) from None
+                )
 
     def get_session(self, name: str):
         """
@@ -159,41 +136,8 @@ class DatabaseConnectionManager:
             try:
                 conn['engine'].dispose()
             except Exception as e:
-                print(f"Erro ao fechar conexão '{name}': {e}")
+                raise ValueError(f"Erro ao fechar conexão '{name}': {e}")
         self.connections.clear()
-
-    @staticmethod
-    def build_connection_url(config: Dict[str, Union[str, int]]) -> str:
-        """
-        Constrói uma URL de conexão a partir das configurações fornecidas.
-
-        Args:
-            config (dict): Configurações para a conexão com o banco de dados.
-
-        Returns:
-            str: URL de conexão no formato esperado por SQLAlchemy.
-
-        Raises:
-            ValueError: Se o dicionário de configuração estiver incompleto.
-        """
-        required_keys = [
-            'dialect',
-            'username',
-            'password',
-            'host',
-            'port',
-            'database',
-        ]
-        missing_keys = [key for key in required_keys if key not in config]
-        if missing_keys:
-            raise ValueError(
-                f"Configuração incompleta, chaves ausentes: {', '.join(missing_keys)}"
-            )
-
-        return (
-            f"{config['dialect']}://{config['username']}:{config['password']}@"
-            f"{config['host']}:{config['port']}/{config['database']}"
-        )
 
     def generate_models(self, db_url: str, output_path: str):
         """
@@ -209,6 +153,9 @@ class DatabaseConnectionManager:
             ValueError: Caso o output_path seja inválido ou não seja possível salvar o arquivo.
         """
         try:
+            os.makedirs(
+                self.models_dir, exist_ok=True
+            )  # Garante que a pasta models exista
             # Verifica se o sqlacodegen está instalado
             result = subprocess.run(
                 ['sqlacodegen', '--help'], capture_output=True, text=True
@@ -222,9 +169,50 @@ class DatabaseConnectionManager:
                 check=True,
             )
             print(f'Modelos gerados com sucesso em: {output_path}')
-        except subprocess.CalledProcessError as e:
-            raise subprocess.CalledProcessError(
-                e.returncode, e.cmd, output=e.output, stderr=e.stderr
-            )
         except Exception as e:
             raise ValueError(f'Erro ao gerar modelos: {e}')
+
+    @staticmethod
+    def build_connection_url(config: Dict[str, Union[str, int]]) -> str:
+        """
+        Constrói uma URL de conexão a partir das configurações fornecidas.
+
+        Args:
+            config (dict): Configurações para a conexão com o banco de dados.
+
+        Returns:
+            str: URL de conexão no formato esperado por SQLAlchemy.
+
+        Raises:
+            ValueError: Se o dicionário de configuração estiver incompleto.
+        """
+
+        if config.get('dialect') == 'sqlite':
+            url = f"{config['dialect']}:///{config['database']}"
+        else:
+            url = (
+                f"{config['dialect']}://{config['username']}:{config['password']}@"
+                f"{config['host']}:{config['port']}/{config['database']}"
+            )
+
+        return url
+
+    @staticmethod
+    def validate_requirements_keys(config):
+
+        required_keys = [
+            'name',
+            'dialect',
+            'database',
+        ]  # Chaves básicas necessárias para todos os casos
+        is_sqlite = config.get('dialect') == 'sqlite'
+
+        # Se não for SQLite, adiciona as chaves extras que são obrigatórias
+        if not is_sqlite:
+            required_keys.extend(['username', 'password', 'host', 'port'])
+
+        missing_keys = [key for key in required_keys if not config.get(key)]
+        if missing_keys:
+            return None, missing_keys
+
+        return config, None
