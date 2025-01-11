@@ -622,6 +622,20 @@ files = [
 ]
 
 [[package]]
+name = "mirakuru"
+version = "2.5.3"
+description = "Process executor (not only) for tests."
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "mirakuru-2.5.3-py3-none-any.whl", hash = "sha256:2fab68356fb98fb5358ea3ab65f5e511f34b5a0b16cfd0a0935ef15a3393f025"},
+    {file = "mirakuru-2.5.3.tar.gz", hash = "sha256:39b33f8fcdf13764a6cfe936e0feeead3902a161fec438df3be7cce98f7933c6"},
+]
+
+[package.dependencies]
+psutil = {version = ">=4.0.0", markers = "sys_platform != \"cygwin\""}
+
+[[package]]
 name = "mkdocs"
 version = "1.6.1"
 description = "Project documentation with Markdown."
@@ -867,6 +881,17 @@ dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
+name = "port-for"
+version = "0.7.4"
+description = "Utility that helps with local TCP ports management. It can find an unused TCP localhost port and remember the association."
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "port_for-0.7.4-py3-none-any.whl", hash = "sha256:08404aa072651a53dcefe8d7a598ee8a1dca320d9ac44ac464da16ccf2a02c4a"},
+    {file = "port_for-0.7.4.tar.gz", hash = "sha256:fc7713e7b22f89442f335ce12536653656e8f35146739eccaeff43d28436028d"},
+]
+
+[[package]]
 name = "psutil"
 version = "6.1.1"
 description = "Cross-platform lib for process and system monitoring in Python."
@@ -1004,6 +1029,24 @@ pytest = ">=4.6"
 
 [package.extras]
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "virtualenv"]
+
+[[package]]
+name = "pytest-mysql"
+version = "3.1.0"
+description = "MySQL process and client fixtures for pytest"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "pytest_mysql-3.1.0-py3-none-any.whl", hash = "sha256:26d70c1db401a24d302a8dd93ff6b92457e94cbef4fd7b2f86343d8205129a3b"},
+    {file = "pytest_mysql-3.1.0.tar.gz", hash = "sha256:51f4d90f3cbc0e45d4bb04c24172c2fe97eae8623b86a18a014c976dfeb449d7"},
+]
+
+[package.dependencies]
+mirakuru = "*"
+packaging = ">=23"
+port-for = ">=0.6.0"
+pymysql = "*"
+pytest = ">=6.2"
 
 [[package]]
 name = "python-dateutil"
@@ -1474,4 +1517,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.10.15"
-content-hash = "167b04b090906bfb87e1ce077ec70364af19bd4013ecbb4620f4c73a7cfd8a02"
+content-hash = "187bbc1cd7f2f997db40b29dadae0ac609bcbfb4b6206e28ff58999d2814f132"
