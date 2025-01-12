@@ -1,4 +1,3 @@
-import os
 import subprocess
 from typing import Dict, List, Union
 
@@ -58,8 +57,9 @@ class DatabaseConnectionManager:
         Args:
             configs (list): Uma lista de configurações para conexão com bancos de dados.
         """
+        self.configs = configs
         self.connections = {}
-        self.models_dir = 'models'
+
         for config in configs:
             try:
                 self.add_connection(config)
@@ -90,11 +90,6 @@ class DatabaseConnectionManager:
                     'session': Session,
                 }
 
-                # Gera os modelos para a conexão adicionada
-                output_path = os.path.join(
-                    self.models_dir, f"{config['name']}_models.py"
-                )
-                self.generate_models(connection_string, output_path)
             else:
                 raise ValueError(
                     f"Configuração inválida, valores ausentes ou vazios: {', '.join(missing_keys)}"
@@ -139,38 +134,23 @@ class DatabaseConnectionManager:
                 raise ValueError(f"Erro ao fechar conexão '{name}': {e}")
         self.connections.clear()
 
-    def generate_models(self, db_url: str, output_path: str):
+    def get_config_by_name(self, name):
         """
-        Gera os modelos de tabelas do banco de dados utilizando o sqlacodegen.
+        Busca uma configuração pelo nome.
 
         Args:
-            db_url (str): URL de conexão ao banco de dados.
-            output_path (str): Caminho para o arquivo onde os modelos gerados serão salvos.
+            name (str): Nome da configuração a ser buscada.
+
+        Returns:
+            dict: Configuração correspondente ao nome fornecido.
 
         Raises:
-            EnvironmentError: Caso o sqlacodegen não esteja instalado no ambiente.
-            subprocess.CalledProcessError: Caso ocorra algum erro durante a execução do sqlacodegen.
-            ValueError: Caso o output_path seja inválido ou não seja possível salvar o arquivo.
+            ValueError: Se nenhuma configuração for encontrada com o nome fornecido.
         """
-        try:
-            os.makedirs(
-                self.models_dir, exist_ok=True
-            )  # Garante que a pasta models exista
-            # Verifica se o sqlacodegen está instalado
-            result = subprocess.run(
-                ['sqlacodegen', '--help'], capture_output=True, text=True
-            )
-            if result.returncode != 0:
-                raise EnvironmentError('sqlacodegen não está instalado.')
-
-            # Executa o comando para gerar os modelos
-            subprocess.run(
-                ['sqlacodegen', db_url, '--outfile', output_path],
-                check=True,
-            )
-            print(f'Modelos gerados com sucesso em: {output_path}')
-        except Exception as e:
-            raise ValueError(f'Erro ao gerar modelos: {e}')
+        for config in self.configs:
+            if config.get('name') == name:
+                return config
+        raise ValueError(f"Configuração com o nome '{name}' não encontrada.")
 
     @staticmethod
     def build_connection_url(config: Dict[str, Union[str, int]]) -> str:
