@@ -23,7 +23,7 @@ generator = Generators(db_m, OPENAI_API_KEY=os.getenv('OPENAI_API_KEY'))
 
 res = generator.generate_data(
     'main_db',
-    'Preciso de 10 produtos em 4 departamentos distintos, esses dados devem ter relação com um superatacadista',
+    'Gere 10 produtos em 4 departamentos distintos, esses dados devem ter relação com um supermercado',
 )
 
 print(res)

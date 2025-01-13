@@ -1,5 +1,6 @@
 import os
 import subprocess
+import tiktoken
 
 from openai import OpenAI
 
@@ -21,14 +22,15 @@ class Generators:
         self.models_dir = 'SDSDG_Models'
         self.history = {}  # Armazena o histórico de prompts e respostas
         self.openai_client = OpenAI(api_key=OPENAI_API_KEY)
+        
 
     def generate_data(
         self,
         db_name: str,
         prompt: str,
-        model='gpt-3.5-turbo',
-        max_tokens=4096,
-        temp=0.3,
+        model: str = 'gpt-3.5-turbo-16k',
+        max_tokens: int = 16385,
+        temp: float = 0.3,
     ):
         """
         Gera dados semânticos usando o modelo OpenAI com base em um prompt.
@@ -47,21 +49,7 @@ class Generators:
             ValueError: Se o banco de dados não for encontrado.
             RuntimeError: Se ocorrer um erro na comunicação com a API da OpenAI.
         """
-        if db_name not in self.manager.connections:
-            raise ValueError(
-                f"O banco de dados '{db_name}' não foi encontrado no gerenciador."
-            )
-
-        database_structure = self.generate_models(db_name)
-
-        try:
-            # Envia o prompt para o modelo
-            response = self.openai_client.chat.completions.create(
-                model=model,
-                messages=[
-                    {
-                        'role': 'system',  # Prompt para o modelo seguir as regras e entregar a melhor resposta no formato adequado
-                        'content': """
+        content = """
 Você é um assistente especializado em geração de dados sintéticos. Sua tarefa é gerar resultados no formato JSON e seguir rigorosamente as regras abaixo:
 
 1. Todas as respostas devem ser entregues **apenas no formato JSON**. Não inclua explicações, comentários ou qualquer outro conteúdo fora do JSON.
@@ -122,7 +110,31 @@ real (e.g., preços negativos ou idades impossíveis).
 12. Se o banco de dados não tiver entidades, retornar um JSON vazio.
 
 13. Gere dados em pt-BR e mude apenas se o usuário solicitar.
-""",
+"""
+        if db_name not in self.manager.connections:
+            raise ValueError(
+                f"O banco de dados '{db_name}' não foi encontrado no gerenciador."
+            )
+        
+        database_structure = self.generate_models(db_name)
+
+        database_structure_tokens = self.count_tokens(database_structure, model)
+        content_tokens = self.count_tokens(content, model)
+        prompt_tokens = self.count_tokens(prompt, model)
+        res_tokens = max_tokens - (database_structure_tokens + content_tokens + prompt_tokens) - 40 #Overhead
+
+        if res_tokens < 1000:
+            raise ValueError(
+                f'Quantidade de tokens menor que o mínimo de 1000: tokens restantes = {res_tokens}'
+            )
+        try:
+            # Envia o prompt para o modelo
+            response = self.openai_client.chat.completions.create(
+                model=model,
+                messages=[
+                    {
+                        'role': 'system',  # Prompt para o modelo seguir as regras e entregar a melhor resposta no formato adequado
+                        'content': content,
                     },
                     {
                         'role': 'system',
@@ -130,7 +142,7 @@ real (e.g., preços negativos ou idades impossíveis).
                     },  # Estrutura do banco de dados solicitado
                     {'role': 'user', 'content': prompt},  # Prompt do usuário
                 ],
-                max_tokens=max_tokens,
+                max_tokens=res_tokens,
                 temperature=temp,
             )
 
@@ -206,3 +218,11 @@ real (e.g., preços negativos ou idades impossíveis).
             )
         except Exception as e:
             raise RuntimeError(f'Erro inesperado ao gerar models: {str(e)}')
+    
+    @staticmethod
+    def count_tokens(msg: str, model: str = 'gpt-3.5-turbo-16k'):
+        try:
+            encoding = tiktoken.encoding_for_model(model) # Inicia o tiktoken
+            return len(encoding.encode(msg))
+        except Exception as e:
+            raise RuntimeError(f'Erro inesperado contar tokens: {str(e)}')
