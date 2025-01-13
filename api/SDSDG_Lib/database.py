@@ -123,6 +123,28 @@ class DatabaseConnectionManager:
                 f"Erro ao criar sessão para conexão '{name}': {e}"
             )
 
+    def get_engine(self, name: str):
+        """
+        Retorna uma sessão para o banco de dados especificado.
+
+        Args:
+            name (str): Nome da conexão configurada.
+
+        Returns:
+            sqlalchemy.orm.session.Session: Uma sessão para o banco de dados especificado.
+
+        Raises:
+            ValueError: Se a conexão especificada não for encontrada.
+        """
+        if name not in self.connections:
+            raise ValueError(f"Conexão '{name}' não encontrada.")
+        try:
+            return self.connections[name]['engine']
+        except Exception as e:
+            raise RuntimeError(
+                f"Erro ao criar engine para conexão '{name}': {e}"
+            )
+
     def close_all_connections(self):
         """
         Fecha todas as conexões gerenciadas.

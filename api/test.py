@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from SDSDG_Lib import DatabaseConnectionManager, Generators
+from SDSDG_Lib import DatabaseConnectionManager, Generators, DataHandler
 
 load_dotenv()
 
@@ -25,5 +25,6 @@ res = generator.generate_data(
     'main_db',
     'Gere 10 produtos em 4 departamentos distintos, esses dados devem ter relação com um supermercado',
 )
-
 print(res)
+db_h = DataHandler(db_m.get_engine('main_db'))
+db_h.insert(res)
