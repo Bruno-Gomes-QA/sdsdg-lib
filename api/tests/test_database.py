@@ -1,20 +1,17 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from SDSDG_Lib import DatabaseConnectionManager
+from sdsdg_lib import DatabaseConnectionManager
 
 
 @pytest.fixture
 def db_configs():
+    """Fixture com configurações para os testes."""
     return [
         {
             'name': 'test_db_1',
             'dialect': 'sqlite',
-            'username': '',
-            'password': '',
-            'host': '',
-            'port': '',
             'database': ':memory:',
         },
         {
@@ -26,48 +23,47 @@ def db_configs():
             'port': 3306,
             'database': 'test_db',
         },
+        {
+            'name': 'test_db_3',
+            'dialect': 'postgresql',
+            'username': 'admin',
+            'password': 'admin123',
+            'host': 'localhost',
+            'port': 5432,
+            'database': 'postgres_db',
+        },
     ]
 
 
 def test_initialization_creates_connections(db_configs):
     """Testa se as conexões são inicializadas corretamente."""
-    with patch(
-        'SDSDG_Lib.DatabaseConnectionManager.generate_models'
-    ) as mock_generate_models:
-        mock_generate_models.return_value = (
-            None  # Evita a execução real do sqlacodegen
-        )
-        manager = DatabaseConnectionManager(db_configs)
-    print(len(db_configs))
-    print(manager.connections)
-    assert len(manager.connections) == 2
+    manager = DatabaseConnectionManager(db_configs)
+
+    assert len(manager.connections) == 3
     assert 'test_db_1' in manager.connections
     assert 'test_db_2' in manager.connections
+    assert 'test_db_3' in manager.connections
 
 
 def test_add_connection(db_configs):
     """Testa a adição de uma nova conexão."""
     manager = DatabaseConnectionManager([])
-    config = db_configs[0]
+    config = db_configs[1]
 
-    with patch(
-        'SDSDG_Lib.DatabaseConnectionManager.generate_models'
-    ) as mock_generate_models:
-        mock_generate_models.return_value = None
-        manager.add_connection(config)
+    manager.add_connection(config)
 
     assert len(manager.connections) == 1
-    assert 'test_db_1' in manager.connections
+    assert 'test_db_2' in manager.connections
 
 
 def test_add_connection_missing_keys():
-    """Testa se a exceção é levantada ao adicionar conexão com configuração incompleta."""
+    """Testa se uma exceção é levantada ao adicionar conexão com configuração incompleta."""
     manager = DatabaseConnectionManager([])
 
     incomplete_config = {
         'name': 'invalid_db',
         'dialect': 'sqlite',
-    }  # Configuração incompleta
+    }
 
     with pytest.raises(
         ValueError,
@@ -78,44 +74,67 @@ def test_add_connection_missing_keys():
 
 def test_get_session(db_configs):
     """Testa a recuperação de uma sessão válida."""
-    with patch(
-        'SDSDG_Lib.DatabaseConnectionManager.generate_models'
-    ) as mock_generate_models:
-        mock_generate_models.return_value = (
-            None  # Evita a execução real do sqlacodegen
-        )
-        manager = DatabaseConnectionManager(db_configs)
+    manager = DatabaseConnectionManager(db_configs)
 
     session = manager.get_session('test_db_1')
     assert session is not None
 
 
+def test_get_session_invalid_name(db_configs):
+    """Testa se uma exceção é levantada ao buscar uma sessão de uma conexão inexistente."""
+    manager = DatabaseConnectionManager(db_configs)
+
+    with pytest.raises(
+        ValueError, match="Conexão 'invalid_db' não encontrada."
+    ):
+        manager.get_session('invalid_db')
+
+
 def test_close_all_connections(db_configs):
     """Testa se todas as conexões são fechadas corretamente."""
-    with patch(
-        'SDSDG_Lib.DatabaseConnectionManager.generate_models'
-    ) as mock_generate_models:
-        mock_generate_models.return_value = (
-            None  # Evita a execução real do sqlacodegen
-        )
-        manager = DatabaseConnectionManager(db_configs)
+    manager = DatabaseConnectionManager(db_configs)
 
-    assert len(manager.connections) == 2
+    assert len(manager.connections) == 3
     manager.close_all_connections()
     assert len(manager.connections) == 0
 
 
 def test_build_connection_url():
     """Testa se a URL de conexão é construída corretamente."""
-    config = {
-        'dialect': 'mysql',
+    mysql_config = {
+        'dialect': 'mysql+pymysql',
         'username': 'user',
         'password': 'pass',
         'host': 'localhost',
         'port': 3306,
         'database': 'testdb',
     }
-    expected_url = 'mysql://user:pass@localhost:3306/testdb'
+    mysql_url = 'mysql+pymysql://user:pass@localhost:3306/testdb'
+    assert (
+        DatabaseConnectionManager.build_connection_url(mysql_config)
+        == mysql_url
+    )
 
-    url = DatabaseConnectionManager.build_connection_url(config)
-    assert url == expected_url
+    sqlite_config = {
+        'dialect': 'sqlite',
+        'database': ':memory:',
+    }
+    sqlite_url = 'sqlite:///:memory:'
+    assert (
+        DatabaseConnectionManager.build_connection_url(sqlite_config)
+        == sqlite_url
+    )
+
+    postgres_config = {
+        'dialect': 'postgresql',
+        'username': 'admin',
+        'password': 'admin123',
+        'host': 'localhost',
+        'port': 5432,
+        'database': 'postgres_db',
+    }
+    postgres_url = 'postgresql://admin:admin123@localhost:5432/postgres_db'
+    assert (
+        DatabaseConnectionManager.build_connection_url(postgres_config)
+        == postgres_url
+    )

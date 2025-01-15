@@ -1,7 +1,7 @@
 import os
 import subprocess
-import tiktoken
 
+import tiktoken
 from openai import OpenAI
 
 from .database import DatabaseConnectionManager
@@ -22,7 +22,6 @@ class Generators:
         self.models_dir = 'SDSDG_Models'
         self.history = {}  # Armazena o histórico de prompts e respostas
         self.openai_client = OpenAI(api_key=OPENAI_API_KEY)
-        
 
     def generate_data(
         self,
@@ -79,13 +78,19 @@ Se as IDs são auto-increment então não devem ser geradas na resposta.
             raise ValueError(
                 f"O banco de dados '{db_name}' não foi encontrado no gerenciador."
             )
-        
+
         database_structure = self.generate_models(db_name)
 
-        database_structure_tokens = self.count_tokens(database_structure, model)
+        database_structure_tokens = self.count_tokens(
+            database_structure, model
+        )
         content_tokens = self.count_tokens(content, model)
         prompt_tokens = self.count_tokens(prompt, model)
-        res_tokens = max_tokens - (database_structure_tokens + content_tokens + prompt_tokens) - 40 #Overhead
+        res_tokens = (
+            max_tokens
+            - (database_structure_tokens + content_tokens + prompt_tokens)
+            - 40
+        )   # Overhead
 
         if res_tokens < 1000:
             raise ValueError(
@@ -182,11 +187,11 @@ Se as IDs são auto-increment então não devem ser geradas na resposta.
             )
         except Exception as e:
             raise RuntimeError(f'Erro inesperado ao gerar models: {str(e)}')
-    
+
     @staticmethod
     def count_tokens(msg: str, model: str = 'gpt-3.5-turbo-16k'):
         try:
-            encoding = tiktoken.encoding_for_model(model) # Inicia o tiktoken
+            encoding = tiktoken.encoding_for_model(model)   # Inicia o tiktoken
             return len(encoding.encode(msg))
         except Exception as e:
             raise RuntimeError(f'Erro inesperado contar tokens: {str(e)}')

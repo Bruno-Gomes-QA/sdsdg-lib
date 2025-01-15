@@ -1,4 +1,5 @@
 import json
+
 from sqlalchemy import MetaData, Table
 
 
@@ -20,7 +21,7 @@ class DataHandler:
 
         Args:
             json_data (dict | str): Estrutura JSON contendo as tabelas, colunas e valores a serem inseridos.
-        
+
         Raises:
             ValueError: Caso alguma tabela no JSON não seja encontrada no banco.
         """
@@ -35,22 +36,26 @@ class DataHandler:
                     # Busca a tabela nos metadados
                     table = self.metadata.tables.get(table_name)
                     if table is None:
-                        raise ValueError(f"Tabela '{table_name}' não encontrada no banco de dados.")
+                        raise ValueError(
+                            f"Tabela '{table_name}' não encontrada no banco de dados."
+                        )
 
                     # Extrai os atributos (colunas) e valores
-                    attributes = content["atributos"]
-                    values = content["valores"]
+                    attributes = content['atributos']
+                    values = content['valores']
 
                     # Insere os dados na tabela
                     for value_set in values:
-                        row_data = dict(zip(attributes, value_set))  # Mapeia colunas para valores
+                        row_data = dict(
+                            zip(attributes, value_set)
+                        )  # Mapeia colunas para valores
                         connection.execute(table.insert(), row_data)
 
                 # Confirma a transação
                 transaction.commit()
-                print("Dados inseridos com sucesso!")
+                print('Dados inseridos com sucesso!')
 
             except Exception as e:
                 transaction.rollback()
-                print(f"Erro ao inserir dados: {e}")
+                print(f'Erro ao inserir dados: {e}')
                 raise
