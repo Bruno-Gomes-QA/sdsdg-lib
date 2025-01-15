@@ -1,5 +1,6 @@
 import os
 import subprocess
+import tiktoken
 
 from openai import OpenAI
 
@@ -21,14 +22,15 @@ class Generators:
         self.models_dir = 'SDSDG_Models'
         self.history = {}  # Armazena o histórico de prompts e respostas
         self.openai_client = OpenAI(api_key=OPENAI_API_KEY)
+        
 
     def generate_data(
         self,
         db_name: str,
         prompt: str,
-        model='gpt-3.5-turbo',
-        max_tokens=4096,
-        temp=0.3,
+        model: str = 'gpt-3.5-turbo-16k',
+        max_tokens: int = 16385,
+        temp: float = 0.3,
     ):
         """
         Gera dados semânticos usando o modelo OpenAI com base em um prompt.
@@ -47,13 +49,48 @@ class Generators:
             ValueError: Se o banco de dados não for encontrado.
             RuntimeError: Se ocorrer um erro na comunicação com a API da OpenAI.
         """
+        content = """
+Você é um assistente especializado em geração de dados sintéticos. Sua tarefa é gerar resultados no formato JSON seguindo estas regras:
+
+Formato: Responda apenas em JSON. Não inclua explicações ou comentários.
+Estrutura: Os dados devem seguir a estrutura fornecida (tabelas, colunas e relações) e respeitar constraints (e.g., NOT NULL, UNIQUE, FK).
+Relações: Mantenha consistência nas FK e nas relações entre tabelas.
+Quantidade de Dados: Gere 10 registros por tabela, salvo especificação no prompt. Respeite a coerência dos dados. Ex.: Produtos devem pertencer a departamentos válidos.
+Formato do JSON:
+Ordem: Primeiro tabelas de FK referenciadas, depois dependentes.
+Exemplo:
+{
+    "tabela": {
+        "atributos": ["coluna1", "coluna2"],
+        "valores": [
+            [v1, v2],
+            [v3, v4]
+        ]
+    }
+}
+Inconsistências: Retorne {} para solicitações inválidas ou com conflitos.
+Exemplos do Usuário: Baseie-se em exemplos fornecidos e gere dados consistentes.
+Segurança: Anonimize dados sensíveis (e.g., CPFs, e-mails) e siga regras como GDPR/LGPD.
+Plausibilidade: Gere dados realistas (e.g., sem preços negativos).
+Idioma: Gere em pt-BR, salvo solicitação contrária.
+Se as IDs são auto-increment então não devem ser geradas na resposta.
+"""
         if db_name not in self.manager.connections:
             raise ValueError(
                 f"O banco de dados '{db_name}' não foi encontrado no gerenciador."
             )
-
+        
         database_structure = self.generate_models(db_name)
 
+        database_structure_tokens = self.count_tokens(database_structure, model)
+        content_tokens = self.count_tokens(content, model)
+        prompt_tokens = self.count_tokens(prompt, model)
+        res_tokens = max_tokens - (database_structure_tokens + content_tokens + prompt_tokens) - 40 #Overhead
+
+        if res_tokens < 1000:
+            raise ValueError(
+                f'Quantidade de tokens restantes menor que o mínimo de 1000: tokens restantes = {res_tokens}'
+            )
         try:
             # Envia o prompt para o modelo
             response = self.openai_client.chat.completions.create(
@@ -61,68 +98,7 @@ class Generators:
                 messages=[
                     {
                         'role': 'system',  # Prompt para o modelo seguir as regras e entregar a melhor resposta no formato adequado
-                        'content': """
-Você é um assistente especializado em geração de dados sintéticos. Sua tarefa é gerar resultados no formato JSON e seguir rigorosamente as regras abaixo:
-
-1. Todas as respostas devem ser entregues **apenas no formato JSON**. Não inclua explicações, comentários ou qualquer outro conteúdo fora do JSON.
-
-2. Os dados devem ser gerados de acordo com a **estrutura fornecida** (tabelas, colunas e relações).
-
-3. Respeite as **relações** e **constraints** definidas entre as tabelas:
-   - As foreign keys devem estar consistentes com as tabelas relacionadas.
-   - Os valores gerados devem ser válidos em relação aos tipos de dados e restrições (e.g., NOT NULL, UNIQUE, DEFAULT, etc.).
-   - Leve em consideração a coerência do contexto. Por exemplo, se um produto pertence a um departamento, não faz sentido gerar 10 produtos com 10 departamentos completamente distintos sem relação.
-
-4. Se o prompt não especificar a quantidade de dados, você deve gerar **10 registros por tabela** por padrão, respeitando as relações entre as tabelas. Caso o usuário especifique um número, siga a solicitação.
-
-5. **Formato Padrão do JSON**:
-   - A estrutura deve seguir a ordem das dependências:
-     1. Primeiro, os dados que possuem **constraints de foreign key**, que outras tabelas possam referenciar.
-     2. Depois, os dados que dependem de outras tabelas.
-   - Cada tabela deve ser representada como uma chave no JSON:
-     ```json
-     {
-         "nome_da_tabela": {
-             "atributos": ["coluna1", "coluna2", "coluna3"],
-             "valores": [
-                 [valor1, valor2, valor3],
-                 [valor4, valor5, valor6]
-             ]
-         }
-     }
-     ```
-   - Cada tabela deve ser gerada no mesmo padrão, mantendo consistência entre os dados.
-
-6. Algumas solicitações podem não gerar resultados válidos (e.g., estruturas incompletas ou conflitantes). Nesse caso, retorne um JSON vazio no seguinte formato:
-   ```json
-   {}
-7. Se o usuário fornecer dados iniciais ou exemplos no prompt, utilize-os como base para gerar dados similares. Certifique-se de que os dados gerados sejam consistentes
-com os fornecidos e sigam as instruções passadas pelo usuário.
-
-8. Segurança e Anonimização:
-
-    - Dados sensíveis (e.g., nomes, CPFs, e-mails) devem ser anonimizados e consistentes. Por exemplo:
-        - Gerar nomes fictícios.
-        - Substituir CPFs por números válidos mas não reais.
-        - Utilizar domínios genéricos para e-mails (e.g., usuario@example.com).
-    Respeite as regras de segurança de dados, evitando gerar informações que possam violar leis de privacidade (como GDPR ou LGPD).
-
-9. Contexto do Banco de Dados:
-
-    - Use o contexto geral do banco para gerar dados coerentes. Por exemplo:
-        - Produtos devem pertencer a categorias válidas.
-        - Funcionários devem ser atribuídos a departamentos relevantes.
-        - Ordens de compra devem referenciar clientes e produtos existentes.
-
-10. O JSON gerado deve cobrir todas as tabelas mencionadas na solicitação. Se alguma tabela for omitida, ela não deve aparecer no resultado.
-
-11. Certifique-se de que os dados gerados sejam plausíveis e representem cenários realistas, evitando valores que não façam sentido no mundo
-real (e.g., preços negativos ou idades impossíveis).
-
-12. Se o banco de dados não tiver entidades, retornar um JSON vazio.
-
-13. Gere dados em pt-BR e mude apenas se o usuário solicitar.
-""",
+                        'content': content,
                     },
                     {
                         'role': 'system',
@@ -130,7 +106,7 @@ real (e.g., preços negativos ou idades impossíveis).
                     },  # Estrutura do banco de dados solicitado
                     {'role': 'user', 'content': prompt},  # Prompt do usuário
                 ],
-                max_tokens=max_tokens,
+                max_tokens=res_tokens,
                 temperature=temp,
             )
 
@@ -206,3 +182,11 @@ real (e.g., preços negativos ou idades impossíveis).
             )
         except Exception as e:
             raise RuntimeError(f'Erro inesperado ao gerar models: {str(e)}')
+    
+    @staticmethod
+    def count_tokens(msg: str, model: str = 'gpt-3.5-turbo-16k'):
+        try:
+            encoding = tiktoken.encoding_for_model(model) # Inicia o tiktoken
+            return len(encoding.encode(msg))
+        except Exception as e:
+            raise RuntimeError(f'Erro inesperado contar tokens: {str(e)}')

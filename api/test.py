@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from SDSDG_Lib import DatabaseConnectionManager, Generators
+from SDSDG_Lib import DatabaseConnectionManager, Generators, DataHandler
 
 load_dotenv()
 
@@ -23,7 +23,8 @@ generator = Generators(db_m, OPENAI_API_KEY=os.getenv('OPENAI_API_KEY'))
 
 res = generator.generate_data(
     'main_db',
-    'Preciso de 10 produtos em 4 departamentos distintos, esses dados devem ter relação com um superatacadista',
+    'Gere 10 produtos em 4 departamentos distintos, esses dados devem ter relação com um supermercado',
 )
-
 print(res)
+db_h = DataHandler(db_m.get_engine('main_db'))
+db_h.insert(res)

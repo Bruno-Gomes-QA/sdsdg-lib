@@ -1,12 +1,13 @@
-## SDSDG - Simplificando a Geração de Dados Sintéticos Orientados por Semântica
+# SDSDG - Simplificando a Geração de Dados Sintéticos Orientados por Semântica
 
-### 📌 O que é o SDSDG?
+## 📌 O que é o SDSDG?
 
 SDSDG é uma biblioteca poderosa e intuitiva para facilitar a geração de dados sintéticos com base na estrutura do banco de dados do usuário. Ideal para desenvolvedores, cientistas de dados e equipes de QA que precisam criar dados consistentes, seguros e prontos para uso em testes ou protótipos.
 
-### ✨ Principais Funcionalidades
+## ✨ Principais Funcionalidades
 
 📊 Integração com Múltiplos Bancos de Dados
+
 Gerencie conexões com bancos SQL como MySQL, PostgreSQL, SQLite, entre outros, em poucos passos.
 
 ### 🛠️ Geração de Modelos Automática
@@ -22,10 +23,10 @@ Configure múltiplas conexões e gere dados de forma rápida com uma interface i
 Gera dados que seguem as melhores práticas de segurança e anonimização, atendendo a normas como LGPD e GDPR.
 
 ### 🚀 Como a SDSDG pode te ajudar?
-Testes Automatizados: Gere cenários realistas com dados consistentes para validar a aplicação sem acessar dados reais.
-Desenvolvimento de Prototótipos: Popule rapidamente bancos de dados de desenvolvimento ou sandbox.
-Treinamento de Modelos de IA: Crie dados sintéticos com características específicas para treinar seus modelos.
-Análise de Dados: Simule cenários completos sem interferir no ambiente de produção.
+- Testes Automatizados: Gere cenários realistas com dados consistentes para validar a aplicação sem acessar dados reais.
+- Desenvolvimento de Prototótipos: Popule rapidamente bancos de dados de desenvolvimento ou sandbox.
+- Treinamento de Modelos de IA: Crie dados sintéticos com características específicas para treinar seus modelos.
+- Análise de Dados: Simule cenários completos sem interferir no ambiente de produção.
 
 ### 🛠️ Como começar?
 Siga estas etapas simples para utilizar a biblioteca:
@@ -69,6 +70,7 @@ print(response)
 ```
 
 - Geração de Modelos
+
 Gere os modelos SQLAlchemy do banco de dados automaticamente:
 
 ```python
@@ -92,8 +94,8 @@ generator.generate_models("main_db", save_to_file=True)
 ```
 
 ### 📢 Dicas para Maximizar o Uso
-Use prompts claros e objetivos para gerar dados mais relevantes.
-Explore a flexibilidade de configuração para trabalhar com múltiplos bancos ao mesmo tempo.
-Combine os dados gerados com ferramentas de análise ou visualização para entender melhor os cenários simulados.
+- Use prompts claros e objetivos para gerar dados mais relevantes.
+- Explore a flexibilidade de configuração para trabalhar com múltiplos bancos ao mesmo tempo.
+- Combine os dados gerados com ferramentas de análise ou visualização para entender melhor os cenários simulados.
 
 
