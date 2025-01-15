@@ -7,19 +7,15 @@ from sqlalchemy.orm import sessionmaker
 
 class DatabaseConnectionManager:
     """
-    Esta classe gerencia conexões com múltiplos bancos de dados, suporta diferentes dialetos, gera models automaticamente para cada conexão ativa e facilita operações.
+    Esta classe gerencia conexões com múltiplos bancos de dados, suporta diferentes dialetos, e facilita operações.
 
     Attributes:
         connections (dict):
             Dicionário contendo as conexões ativas.
             A chave é o nome da conexão e o valor é outro dicionário com o engine SQLAlchemy e a factory de sessões.
 
-        models_dir (str):
-            Caminho para a pasta onde os arquivos de models gerados serão salvos.
-            O padrão é "models", criado automaticamente na inicialização da classe.
-
     Examples:
-        >>> from SDSDG_Lib.database_manager import DatabaseConnectionManager
+        >>> from SDSDG_Lib import DatabaseConnectionManager
 
         ### Configurações de conexões
         >>> configs = [
@@ -125,13 +121,13 @@ class DatabaseConnectionManager:
 
     def get_engine(self, name: str):
         """
-        Retorna uma sessão para o banco de dados especificado.
+        Retorna a engine para o banco de dados especificado.
 
         Args:
             name (str): Nome da conexão configurada.
 
         Returns:
-            sqlalchemy.orm.session.Session: Uma sessão para o banco de dados especificado.
+            sqlalchemy.engine.Engine: A engine para o banco de dados especificado.
 
         Raises:
             ValueError: Se a conexão especificada não for encontrada.
@@ -201,20 +197,64 @@ class DatabaseConnectionManager:
 
     @staticmethod
     def validate_requirements_keys(config):
+        """
+        Valida as chaves e valores de configuração antes de estabelecer uma conexão.
 
-        required_keys = [
-            'name',
-            'dialect',
-            'database',
-        ]  # Chaves básicas necessárias para todos os casos
+        Args:
+            config (dict): Configuração para a conexão com o banco de dados.
+
+        Returns:
+            tuple: (config, None) se válido; (None, missing_keys) se inválido.
+
+        Raises:
+            ValueError: Se houver erros de validação nos valores fornecidos.
+        """
+        required_keys = ['name', 'dialect', 'database']
         is_sqlite = config.get('dialect') == 'sqlite'
 
-        # Se não for SQLite, adiciona as chaves extras que são obrigatórias
+        # Chaves adicionais obrigatórias para bancos que não são SQLite
         if not is_sqlite:
             required_keys.extend(['username', 'password', 'host', 'port'])
 
+        # Verifica chaves ausentes
         missing_keys = [key for key in required_keys if not config.get(key)]
         if missing_keys:
             return None, missing_keys
+
+        # Validações adicionais para valores
+        if not isinstance(config['name'], str) or not config['name'].strip():
+            raise ValueError("O campo 'name' deve ser uma string não vazia.")
+
+        if config['dialect'] not in ['sqlite', 'mysql+pymysql', 'postgresql']:
+            raise ValueError(
+                f"Dialeto '{config['dialect']}' não suportado. Use 'sqlite', 'mysql' ou 'postgresql'."
+            )
+
+        if not is_sqlite:
+            if (
+                not isinstance(config['host'], str)
+                or not config['host'].strip()
+            ):
+                raise ValueError(
+                    "O campo 'host' deve ser uma string não vazia."
+                )
+
+            if not isinstance(config['port'], int) or not (
+                1 <= config['port'] <= 65535
+            ):
+                raise ValueError(
+                    "O campo 'port' deve ser um número inteiro entre 1 e 65535."
+                )
+
+            if (
+                not isinstance(config['username'], str)
+                or not config['username'].strip()
+            ):
+                raise ValueError(
+                    "O campo 'username' deve ser uma string não vazia."
+                )
+
+            if not isinstance(config['password'], str):
+                raise ValueError("O campo 'password' deve ser uma string.")
 
         return config, None

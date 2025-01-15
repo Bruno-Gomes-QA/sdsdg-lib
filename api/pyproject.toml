@@ -1,5 +1,8 @@
 [tool.poetry]
 name = "sdsdg-lib"
+packages = [
+    { include = "sdsdg_lib" }  # Nome da pasta para importação
+]
 version = "0.1.0"
 description = ""
 authors = ["Bruno-Gomes-QA <bruno.gomes.qa@gmail.com>"]
@@ -9,6 +12,7 @@ readme = "README.md"
 python = "3.10.15"
 sqlacodegen = "^2.3.0.post1"
 pymysql = "^1.1.1"
+psycopg2-binary = "^2.8.0"
 streamlit = "^1.41.1"
 openai = "^1.59.6"
 cryptography = "^44.0.0"
@@ -46,7 +50,7 @@ line_length = 79
 lint = "blue . && isort ."
 docs = "mkdocs serve"
 pre_test = "task lint"
-test = "pytest -s -x --cov=SDSDG_Lib -vv"
+test = "pytest -s -x --cov=sdsdg_lib -vv"
 post_test = "coverage html"
 
 [project.optional-dependencies]

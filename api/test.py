@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from SDSDG_Lib import DatabaseConnectionManager, Generators, DataHandler
+from sdsdg_lib import DatabaseConnectionManager, DataHandler, Generators
 
 load_dotenv()
 
