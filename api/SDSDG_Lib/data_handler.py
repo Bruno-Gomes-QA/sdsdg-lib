@@ -5,7 +5,7 @@ from sqlalchemy import MetaData, Table
 class DataHandler:
     def __init__(self, engine):
         """
-        Inicializa o inseridor de dados automáticos.
+        Inicializa o orquestrador de dados automáticos.
 
         Args:
             engine: Instância do SQLAlchemy engine conectada ao banco.

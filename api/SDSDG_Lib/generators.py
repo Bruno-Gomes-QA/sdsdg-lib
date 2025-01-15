@@ -89,7 +89,7 @@ Se as IDs são auto-increment então não devem ser geradas na resposta.
 
         if res_tokens < 1000:
             raise ValueError(
-                f'Quantidade de tokens menor que o mínimo de 1000: tokens restantes = {res_tokens}'
+                f'Quantidade de tokens restantes menor que o mínimo de 1000: tokens restantes = {res_tokens}'
             )
         try:
             # Envia o prompt para o modelo
