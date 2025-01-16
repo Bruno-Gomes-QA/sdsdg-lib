@@ -1,12 +1,17 @@
 # SDSDG - Simplificando a Geração de Dados Sintéticos Orientados por Semântica
 
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Pytest](https://img.shields.io/badge/pytest-%23ffffff.svg?style=for-the-badge&logo=pytest&logoColor=2f9fe3)
+![ChatGPT](https://img.shields.io/badge/chatGPT-74aa9c?style=for-the-badge&logo=openai&logoColor=white)
+![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)
+
 ## 📌 O que é o SDSDG?
 
 SDSDG é uma biblioteca poderosa e intuitiva para facilitar a geração de dados sintéticos com base na estrutura do banco de dados do usuário. Ideal para desenvolvedores, cientistas de dados e equipes de QA que precisam criar dados consistentes, seguros e prontos para uso em testes ou protótipos.
 
 ## ✨ Principais Funcionalidades
 
-📊 Integração com Múltiplos Bancos de Dados
+### 📊 Integração com Múltiplos Bancos de Dados
 
 Gerencie conexões com bancos SQL como MySQL, PostgreSQL, SQLite, entre outros, em poucos passos.
 
@@ -22,7 +27,7 @@ Configure múltiplas conexões e gere dados de forma rápida com uma interface i
 ### 🔒 Dados Seguros e Anonimizados
 Gera dados que seguem as melhores práticas de segurança e anonimização, atendendo a normas como LGPD e GDPR.
 
-### 🚀 Como a SDSDG pode te ajudar?
+### 🚀 Como pode te ajudar?
 - Testes Automatizados: Gere cenários realistas com dados consistentes para validar a aplicação sem acessar dados reais.
 - Desenvolvimento de Prototótipos: Popule rapidamente bancos de dados de desenvolvimento ou sandbox.
 - Treinamento de Modelos de IA: Crie dados sintéticos com características específicas para treinar seus modelos.
@@ -33,7 +38,7 @@ Siga estas etapas simples para utilizar a biblioteca:
 
 - Instalação
 ```bash
-pip install SDSDG
+pip install sdsdg-lib
 ```
 
 - Configuração
@@ -41,7 +46,7 @@ pip install SDSDG
 Defina as configurações de conexão com seus bancos de dados:
 
 ```python
-from SDSDG_Lib import DatabaseConnectionManager, Generators
+from sdsdg_lib import DatabaseConnectionManager, Generators
 
 configs = [
     {
