@@ -1,7 +1,7 @@
 site_name: SDSDG-Lib
 repo_url: https://github.com/Bruno-Gomes-QA/SDSDG
 repo_name: Bruno-Gomes-QA/SDSDG-Lib
-edit_uri: tree/master/SDSDG_Lib/docs
+edit_uri: tree/master/api/docs
 
 theme:
   name: material
@@ -16,4 +16,4 @@ plugins:
 - mkdocstrings:
     handlers:
       python:
-        paths: [SDSDG_Lib]
+        paths: [sdsdg_lib]
